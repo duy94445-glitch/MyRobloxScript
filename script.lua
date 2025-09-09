@@ -1,232 +1,240 @@
--- Loadstring mẫu:
--- loadstring(game:HttpGet("https://raw.githubusercontent.com/duy94445-glitch/MyRobloxScript/refs/heads/main/script.lua"))()
+--// GUI Hack Full cho Roblox (Mobile + PC)
+--// Tính năng: Speed, Jump, Fly, Noclip, Godmode, Zoom, ESP, Fullbright, Spectator Teleport (Tốc biến), Anti (Screech, Halt, Seek, A-90, Giggle), Auto heal, NoHitbox
+--// Author: ChatGPT x Khiêm
 
-local player = game.Players.LocalPlayer
-local gui = Instance.new("ScreenGui")
-gui.Name = "UtilityGUI"
-gui.Parent = game.CoreGui
+-- Bảo vệ cơ bản
+pcall(function() getgenv()._loaded:Disconnect() end)
+getgenv()._loaded = Instance.new("BindableEvent")
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 760)
-frame.Position = UDim2.new(0, 10, 0, 50)
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-frame.BorderSizePixel = 0
-frame.Parent = gui
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
 
--- Status label
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(0, 280, 0, 30)
-statusLabel.Position = UDim2.new(0, 10, 0, 730)
-statusLabel.BackgroundTransparency = 1
-statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-statusLabel.Text = "MiniHack Loaded & Improved"
-statusLabel.Parent = frame
+local player = Players.LocalPlayer
+local cam = Workspace.CurrentCamera
+local hrp = nil
+local hum = nil
 
-local function createToggle(name, posY, callback)
-    local btn = Instance.new("TextButton")
-    btn.Size = UDim2.new(0, 280, 0, 30)
-    btn.Position = UDim2.new(0, 10, 0, posY)
-    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Text = name .. " [OFF]"
-    btn.Parent = frame
+-- GUI
+local screenGui = Instance.new("ScreenGui", game.CoreGui)
+local mainFrame = Instance.new("Frame", screenGui)
+mainFrame.Size = UDim2.new(0, 300, 0, 500)
+mainFrame.Position = UDim2.new(0, 50, 0, 50)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+mainFrame.Active = true
+mainFrame.Draggable = true
+
+local uiList = Instance.new("UIListLayout", mainFrame)
+uiList.Padding = UDim.new(0,5)
+
+local statusLabel = Instance.new("TextLabel", mainFrame)
+statusLabel.Size = UDim2.new(1,0,0,25)
+statusLabel.Text = "Hack Menu - Active"
+statusLabel.BackgroundColor3 = Color3.fromRGB(50,50,50)
+statusLabel.TextColor3 = Color3.fromRGB(0,255,0)
+
+-- Helper
+local function createToggle(name, callback)
+    local btn = Instance.new("TextButton", mainFrame)
+    btn.Size = UDim2.new(1,0,0,30)
+    btn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Text = "[OFF] " .. name
     local state = false
     btn.MouseButton1Click:Connect(function()
         state = not state
-        btn.Text = name .. (state and " [ON]" or " [OFF]")
-        statusLabel.Text = name .. " " .. (state and "bật" or "tắt")
+        btn.Text = (state and "[ON] " or "[OFF] ") .. name
         callback(state)
     end)
 end
 
-local function createInput(name, posY, default, callback)
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(0, 130, 0, 30)
-    label.Position = UDim2.new(0, 10, 0, posY)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.Text = name
-    label.Parent = frame
+-- Update character
+local function updateChar()
+    if player.Character then
+        hrp = player.Character:FindFirstChild("HumanoidRootPart")
+        hum = player.Character:FindFirstChildOfClass("Humanoid")
+    end
+end
+player.CharacterAdded:Connect(updateChar)
+updateChar()
 
-    local box = Instance.new("TextBox")
-    box.Size = UDim2.new(0, 140, 0, 30)
-    box.Position = UDim2.new(0, 150, 0, posY)
-    box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    box.TextColor3 = Color3.fromRGB(255, 255, 255)
-    box.Text = tostring(default)
-    box.Parent = frame
-    box.FocusLost:Connect(function(enter)
-        if enter then
-            local val = tonumber(box.Text)
-            if val then
-                callback(val)
+--// 1. Fullbright
+createToggle("Fullbright", function(state)
+    if state then
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 14
+        Lighting.FogEnd = 1e9
+        Lighting.GlobalShadows = false
+        Lighting.OutdoorAmbient = Color3.new(1,1,1)
+    else
+        Lighting.GlobalShadows = true
+    end
+end)
+
+--// 2. Walkspeed
+createToggle("Speed Hack", function(state)
+    if state and hum then
+        local input = tonumber(game:GetService("Players").LocalPlayer:Kick("Nhập tốc độ ở Console!")) or 50
+        hum.WalkSpeed = input
+    elseif hum then
+        hum.WalkSpeed = 16
+    end
+end)
+
+--// 3. Jump Power
+createToggle("Jump Hack", function(state)
+    if state and hum then
+        local input = tonumber(game:GetService("Players").LocalPlayer:Kick("Nhập nhảy cao ở Console!")) or 100
+        hum.JumpPower = input
+    elseif hum then
+        hum.JumpPower = 50
+    end
+end)
+
+--// 4. Noclip
+local noclipConn
+createToggle("Noclip", function(state)
+    if state then
+        noclipConn = RunService.Stepped:Connect(function()
+            if hrp then
+                for _,v in pairs(player.Character:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.CanCollide = false
+                    end
+                end
             end
+        end)
+    else
+        if noclipConn then noclipConn:Disconnect() end
+    end
+end)
+
+--// 5. Fly
+local flyConn
+createToggle("Fly", function(state)
+    if state then
+        flyConn = RunService.RenderStepped:Connect(function()
+            if hrp then
+                local vel = Vector3.zero
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then vel = vel + Vector3.new(0,50,0) end
+                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then vel = vel + Vector3.new(0,-50,0) end
+                hrp.Velocity = Vector3.new(0, vel.Y, 0)
+            end
+        end)
+    else
+        if flyConn then flyConn:Disconnect() end
+    end
+end)
+
+--// 6. Godmode (v1 + v2)
+createToggle("Godmode v1", function(state)
+    if state and hum then
+        hum.MaxHealth = math.huge
+        hum.Health = math.huge
+    elseif hum then
+        hum.MaxHealth = 100
+        hum.Health = 100
+    end
+end)
+createToggle("Godmode v2 (NoHitbox)", function(state)
+    if state and hum then
+        hum.MaxHealth = math.huge
+        hum.Health = math.huge
+        for _,v in pairs(player.Character:GetDescendants()) do
+            if v:IsA("BasePart") and v.Name ~= "HumanoidRootPart" then
+                v.CanCollide = false
+                v.Size = Vector3.new(0,0,0)
+            end
+        end
+    end
+end)
+
+--// 7. Zoom unlock + unlock mouse
+createToggle("Unlock Zoom", function(state)
+    if state then
+        player.CameraMaxZoomDistance = 1000
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+    else
+        player.CameraMaxZoomDistance = 20
+    end
+end)
+
+--// 8. Auto Heal nếu máu = 255
+RunService.Heartbeat:Connect(function()
+    if hum and hum.Health == 255 then
+        hum.Health = hum.MaxHealth
+    end
+end)
+
+--// 9. Spectator Teleport (Tốc biến)
+local teleportMode = false
+local freecamConn
+createToggle("Thoát hồn/Tốc biến", function(state)
+    teleportMode = state
+    if state then
+        cam.CameraType = Enum.CameraType.Scriptable
+        cam.CFrame = hrp and hrp.CFrame or cam.CFrame
+        statusLabel.Text = "Thoát hồn - tap để dịch chuyển"
+    else
+        cam.CameraType = Enum.CameraType.Custom
+        cam.CameraSubject = hum
+        if freecamConn then freecamConn:Disconnect() end
+        statusLabel.Text = "Thoát hồn/Tốc biến đã tắt"
+    end
+end)
+UserInputService.InputBegan:Connect(function(input, gp)
+    if teleportMode and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+        if hrp then
+            hrp.CFrame = cam.CFrame
+            teleportMode = false
+            cam.CameraType = Enum.CameraType.Custom
+            cam.CameraSubject = hum
+            statusLabel.Text = "Đã tốc biến!"
+        end
+    end
+end)
+
+--// 10. Anti (Screech, Halt, Seek, A-90, Giggle) - dạng đơn giản
+local antiFeatures = {"Screech","Halt","Seek","A90","Giggle"}
+for _,name in pairs(antiFeatures) do
+    createToggle("Anti "..name, function(state)
+        if state then
+            -- Cơ chế chặn cơ bản: xóa Entity nếu spawn
+            Workspace.DescendantAdded:Connect(function(obj)
+                if obj.Name:lower():find(name:lower()) then
+                    obj:Destroy()
+                    statusLabel.Text = "Chặn "..name
+                end
+            end)
         end
     end)
 end
 
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local cam = workspace.CurrentCamera
-local activeFeatures = {speed = 16, jump = 50}
-
--- Anti Kick cơ bản
-pcall(function()
-    local mt = getrawmetatable(game)
-    setreadonly(mt, false)
-    local oldNamecall = mt.__namecall
-    mt.__namecall = newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        if method == "Kick" or method == "kick" then
-            warn("Blocked a kick attempt")
-            return nil
-        end
-        return oldNamecall(self, ...)
-    end)
-end)
-
--- GUI Options
-createToggle("Ẩn/Hiện GUI", 10, function(state)
-    frame.Visible = not state
-end)
-
-createInput("Speed", 50, 16, function(val)
-    activeFeatures.speed = val
-end)
-
-createInput("JumpPower", 90, 50, function(val)
-    activeFeatures.jump = val
-end)
-
-createToggle("Fly V1 (Flappy Bird)", 130, function(state)
-    activeFeatures.flyV1 = state
-end)
-
-createToggle("Fly V2 (Free-fly)", 170, function(state)
-    activeFeatures.flyV2 = state
-end)
-
-createToggle("God Mode V1", 210, function(state)
-    activeFeatures.godMode1 = state
-end)
-
-createToggle("God Mode V2 (Ghost)", 250, function(state)
-    activeFeatures.godMode2 = state
-end)
-
-createToggle("Noclip", 290, function(state)
-    activeFeatures.noclip = state
-end)
-
-createToggle("Anti AFK", 330, function(state)
-    if activeFeatures.afkConn then
-        activeFeatures.afkConn:Disconnect()
-        activeFeatures.afkConn = nil
-    end
+--// 11. ESP cơ bản (Doors/Key/Lever/Items/Monster)
+createToggle("ESP Items/Monsters", function(state)
     if state then
-        local vu = game:GetService("VirtualUser")
-        activeFeatures.afkConn = player.Idled:Connect(function()
-            vu:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-            task.wait(1)
-            vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-        end)
-    end
-end)
-
-createInput("Zoom Min", 370, 5, function(val)
-    player.CameraMinZoomDistance = val
-end)
-
-createInput("Zoom Max", 410, 50, function(val)
-    player.CameraMaxZoomDistance = val
-end)
-
-createToggle("Unlock Camera Mode", 450, function(state)
-    if state then
-        player.CameraMode = Enum.CameraMode.Classic
-    else
-        player.CameraMode = Enum.CameraMode.LockFirstPerson
-    end
-end)
-
-createToggle("Infinite Jump", 490, function(state)
-    activeFeatures.infiniteJump = state
-end)
-
-createToggle("Forced Jump", 530, function(state)
-    activeFeatures.forcedJump = state
-end)
-
--- Main loop
-RunService.RenderStepped:Connect(function()
-    pcall(function()
-        local char = player.Character
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-        local hum = char and char:FindFirstChild("Humanoid")
-
-        if not (char and hrp and hum) then return end
-
-        -- Speed + JumpPower
-        hum.WalkSpeed = activeFeatures.speed
-        hum.JumpPower = activeFeatures.jump
-
-        -- God Modes
-        if activeFeatures.godMode1 or activeFeatures.godMode2 then
-            if hum.Health < hum.MaxHealth then
-                hum.Health = hum.MaxHealth
-            end
-        end
-
-        -- Noclip/Ghost
-        local isClipping = activeFeatures.noclip or activeFeatures.godMode2
-        if isClipping then
-            for _, part in ipairs(char:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
+        for _,obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("Model") or obj:IsA("Part") then
+                if obj:FindFirstChild("Humanoid") or obj.Name:lower():find("key") or obj.Name:lower():find("door") then
+                    local billboard = Instance.new("BillboardGui", obj)
+                    billboard.Size = UDim2.new(0,200,0,50)
+                    billboard.AlwaysOnTop = true
+                    local text = Instance.new("TextLabel", billboard)
+                    text.Size = UDim2.new(1,0,1,0)
+                    text.TextColor3 = Color3.fromRGB(255,0,0)
+                    text.BackgroundTransparency = 1
+                    text.Text = obj.Name
                 end
             end
-        else
-            if hrp then hrp.CanCollide = true end
-            local head = char:FindFirstChild("Head")
-            if head then head.CanCollide = true end
         end
-
-        for _, part in ipairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.Transparency = activeFeatures.godMode2 and 0.5 or 0
-            end
+    else
+        for _,v in pairs(Workspace:GetDescendants()) do
+            if v:IsA("BillboardGui") then v:Destroy() end
         end
-
-        -- Fly
-        if activeFeatures.flyV2 then
-            local move = Vector3.new()
-            local speed = 50
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then move += cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then move -= cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then move -= cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then move += cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then move += Vector3.new(0, 1, 0) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then move -= Vector3.new(0, 1, 0) end
-
-            if move.Magnitude > 0 then
-                hrp.Velocity = move.Unit * speed
-            else
-                hrp.Velocity = Vector3.new()
-            end
-        elseif activeFeatures.flyV1 then
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
-            end
-        end
-
-        -- Infinite Jump
-        if activeFeatures.infiniteJump then
-            hum.Jump = true
-        end
-
-        -- Forced Jump (ép nhảy kể cả khi game chặn)
-        if activeFeatures.forcedJump and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-            hum:ChangeState(Enum.HumanoidStateType.Jumping)
-        end
-    end)
+    end
 end)
+
+statusLabel.Text = "Hack GUI đã load thành công!"
