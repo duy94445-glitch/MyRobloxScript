@@ -1,11 +1,13 @@
--- GUI setup
+-- Loadstring mẫu:
+-- loadstring(game:HttpGet("https://raw.githubusercontent.com/duy94445-glitch/MyRobloxScript/refs/heads/main/script.lua"))()
+
 local player = game.Players.LocalPlayer
 local gui = Instance.new("ScreenGui")
 gui.Name = "UtilityGUI"
 gui.Parent = game.CoreGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 500)
+frame.Size = UDim2.new(0, 300, 0, 760)
 frame.Position = UDim2.new(0, 10, 0, 50)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
@@ -14,10 +16,10 @@ frame.Parent = gui
 -- Status label
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(0, 280, 0, 30)
-statusLabel.Position = UDim2.new(0, 10, 0, 470)
+statusLabel.Position = UDim2.new(0, 10, 0, 730)
 statusLabel.BackgroundTransparency = 1
 statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-statusLabel.Text = "MiniHack Loaded"
+statusLabel.Text = "MiniHack Loaded & Improved"
 statusLabel.Parent = frame
 
 local function createToggle(name, posY, callback)
@@ -37,131 +39,194 @@ local function createToggle(name, posY, callback)
     end)
 end
 
+local function createInput(name, posY, default, callback)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0, 130, 0, 30)
+    label.Position = UDim2.new(0, 10, 0, posY)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Text = name
+    label.Parent = frame
+
+    local box = Instance.new("TextBox")
+    box.Size = UDim2.new(0, 140, 0, 30)
+    box.Position = UDim2.new(0, 150, 0, posY)
+    box.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    box.Text = tostring(default)
+    box.Parent = frame
+    box.FocusLost:Connect(function(enter)
+        if enter then
+            local val = tonumber(box.Text)
+            if val then
+                callback(val)
+            end
+        end
+    end)
+end
+
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local cam = workspace.CurrentCamera
-local activeFeatures = {}
+local activeFeatures = {speed = 16, jump = 50}
 
--- Ẩn/Hiện GUI
+-- Anti Kick cơ bản
+pcall(function()
+    local mt = getrawmetatable(game)
+    setreadonly(mt, false)
+    local oldNamecall = mt.__namecall
+    mt.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        if method == "Kick" or method == "kick" then
+            warn("Blocked a kick attempt")
+            return nil
+        end
+        return oldNamecall(self, ...)
+    end)
+end)
+
+-- GUI Options
 createToggle("Ẩn/Hiện GUI", 10, function(state)
     frame.Visible = not state
 end)
 
--- Fly V1
-createToggle("Fly V1", 50, function(state)
+createInput("Speed", 50, 16, function(val)
+    activeFeatures.speed = val
+end)
+
+createInput("JumpPower", 90, 50, function(val)
+    activeFeatures.jump = val
+end)
+
+createToggle("Fly V1 (Flappy Bird)", 130, function(state)
     activeFeatures.flyV1 = state
 end)
 
--- Fly V2
-createToggle("Fly V2", 90, function(state)
+createToggle("Fly V2 (Free-fly)", 170, function(state)
     activeFeatures.flyV2 = state
 end)
 
--- God Mode
-local godConn = nil
-createToggle("God Mode", 130, function(state)
-    activeFeatures.godMode = state
-    if godConn then godConn:Disconnect(); godConn = nil end
-    if state then
-        local hum = player.Character and player.Character:FindFirstChild("Humanoid")
-        if hum then
-            hum.Health = hum.MaxHealth
-            godConn = hum.HealthChanged:Connect(function(health)
-                if health < hum.MaxHealth then
-                    hum.Health = hum.MaxHealth
-                end
-            end)
-        end
-    end
+createToggle("God Mode V1", 210, function(state)
+    activeFeatures.godMode1 = state
 end)
 
--- Anti Animation
-local charConn = nil
-createToggle("Anti Animation", 170, function(state)
-    activeFeatures.antiAnim = state
-    if charConn then charConn:Disconnect(); charConn = nil end
-    local function destroyAnims(char)
-        if char then
-            for _, anim in pairs(char:GetDescendants()) do
-                if anim:IsA("Animation") then anim:Destroy() end
-            end
-        end
+createToggle("God Mode V2 (Ghost)", 250, function(state)
+    activeFeatures.godMode2 = state
+end)
+
+createToggle("Noclip", 290, function(state)
+    activeFeatures.noclip = state
+end)
+
+createToggle("Anti AFK", 330, function(state)
+    if activeFeatures.afkConn then
+        activeFeatures.afkConn:Disconnect()
+        activeFeatures.afkConn = nil
     end
     if state then
-        destroyAnims(player.Character)
-        charConn = player.CharacterAdded:Connect(destroyAnims)
-    end
-end)
-
--- Anti chặn di chuyển
-createToggle("Anti Chặn Di chuyển", 210, function(state)
-    activeFeatures.antiBlock = state
-end)
-
--- Tăng độ sáng
-createToggle("Tăng độ sáng", 250, function(state)
-    game.Lighting.Brightness = state and 5 or 1
-end)
-
--- Nhảy cao
-createToggle("Nhảy cao", 290, function(state)
-    activeFeatures.highJump = state
-end)
-
--- Tăng tốc auto input (dummy)
-createToggle("Tăng tốc độ Auto Input", 330, function(state)
-    activeFeatures.fastInput = state
-end)
-
--- Anti AFK
-local afkConn = nil
-createToggle("Anti AFK", 370, function(state)
-    if afkConn then afkConn:Disconnect(); afkConn = nil end
-    if state then
-        local VirtualUser = game:GetService("VirtualUser")
-        afkConn = player.Idled:Connect(function()
-            VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-            task.wait()
-            VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+        local vu = game:GetService("VirtualUser")
+        activeFeatures.afkConn = player.Idled:Connect(function()
+            vu:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+            task.wait(1)
+            vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
         end)
     end
 end)
 
--- RunService main loop
+createInput("Zoom Min", 370, 5, function(val)
+    player.CameraMinZoomDistance = val
+end)
+
+createInput("Zoom Max", 410, 50, function(val)
+    player.CameraMaxZoomDistance = val
+end)
+
+createToggle("Unlock Camera Mode", 450, function(state)
+    if state then
+        player.CameraMode = Enum.CameraMode.Classic
+    else
+        player.CameraMode = Enum.CameraMode.LockFirstPerson
+    end
+end)
+
+createToggle("Infinite Jump", 490, function(state)
+    activeFeatures.infiniteJump = state
+end)
+
+createToggle("Forced Jump", 530, function(state)
+    activeFeatures.forcedJump = state
+end)
+
+-- Main loop
 RunService.RenderStepped:Connect(function()
-    local char = player.Character
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    local hum = char and char:FindFirstChild("Humanoid")
-    local cam = workspace.CurrentCamera
+    pcall(function()
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChild("Humanoid")
 
-    -- Fly V1 kiểu Flappy Bird
-    if activeFeatures.flyV1 and hrp then
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-            hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
+        if not (char and hrp and hum) then return end
+
+        -- Speed + JumpPower
+        hum.WalkSpeed = activeFeatures.speed
+        hum.JumpPower = activeFeatures.jump
+
+        -- God Modes
+        if activeFeatures.godMode1 or activeFeatures.godMode2 then
+            if hum.Health < hum.MaxHealth then
+                hum.Health = hum.MaxHealth
+            end
         end
-    end
 
-    -- Fly V2 bay tự do 3D
-    if activeFeatures.flyV2 and hrp then
-        local move = Vector3.new(0, 0, 0)
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then move = move + cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then move = move - cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then move = move - cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then move = move + cam.CFrame.RightVector end
+        -- Noclip/Ghost
+        local isClipping = activeFeatures.noclip or activeFeatures.godMode2
+        if isClipping then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        else
+            if hrp then hrp.CanCollide = true end
+            local head = char:FindFirstChild("Head")
+            if head then head.CanCollide = true end
+        end
 
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then move = move + Vector3.new(0, 1, 0) end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then move = move + Vector3.new(0, -1, 0) end
-        
-        hrp.AssemblyLinearVelocity = move * 50
-    end
+        for _, part in ipairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Transparency = activeFeatures.godMode2 and 0.5 or 0
+            end
+        end
 
-    -- Anti Block
-    if activeFeatures.antiBlock and hum then
-        hum.WalkSpeed = 16
-    end
+        -- Fly
+        if activeFeatures.flyV2 then
+            local move = Vector3.new()
+            local speed = 50
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then move += cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then move -= cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then move -= cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then move += cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then move += Vector3.new(0, 1, 0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then move -= Vector3.new(0, 1, 0) end
 
-    -- High Jump
-    if hum then
-        hum.JumpPower = activeFeatures.highJump and 200 or 50
-    end
+            if move.Magnitude > 0 then
+                hrp.Velocity = move.Unit * speed
+            else
+                hrp.Velocity = Vector3.new()
+            end
+        elseif activeFeatures.flyV1 then
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
+            end
+        end
+
+        -- Infinite Jump
+        if activeFeatures.infiniteJump then
+            hum.Jump = true
+        end
+
+        -- Forced Jump (ép nhảy kể cả khi game chặn)
+        if activeFeatures.forcedJump and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end)
 end)
