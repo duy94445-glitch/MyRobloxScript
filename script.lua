@@ -70,21 +70,6 @@ local UserInputService = game:GetService("UserInputService")
 local cam = workspace.CurrentCamera
 local activeFeatures = {speed = 16, jump = 50}
 
--- Anti Kick cơ bản
-pcall(function()
-    local mt = getrawmetatable(game)
-    setreadonly(mt, false)
-    local oldNamecall = mt.__namecall
-    mt.__namecall = newcclosure(function(self, ...)
-        local method = getnamecallmethod()
-        if method == "Kick" or method == "kick" then
-            warn("Blocked a kick attempt")
-            return nil
-        end
-        return oldNamecall(self, ...)
-    end)
-end)
-
 -- GUI Options
 createToggle("Ẩn/Hiện GUI", 10, function(state)
     frame.Visible = not state
@@ -102,7 +87,7 @@ createToggle("Fly V1 (Flappy Bird)", 130, function(state)
     activeFeatures.flyV1 = state
 end)
 
-createToggle("Fly V2 (Airplane)", 170, function(state)
+createToggle("Fly V2 (Free-fly)", 170, function(state)
     activeFeatures.flyV2 = state
 end)
 
@@ -199,6 +184,14 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
+-- Toggle Fly V2 bằng phím F
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if not gpe and input.KeyCode == Enum.KeyCode.F then
+        activeFeatures.flyV2 = not activeFeatures.flyV2
+        statusLabel.Text = "Fly V2 " .. (activeFeatures.flyV2 and "bật" or "tắt")
+    end
+end)
+
 -- Main loop
 RunService.RenderStepped:Connect(function()
     pcall(function()
@@ -239,36 +232,23 @@ RunService.RenderStepped:Connect(function()
             end
         end
 
-        -- Fly V2 (Airplane)
+        -- Fly V2 bay theo hướng camera
         if activeFeatures.flyV2 then
-            if not hrp:FindFirstChild("FlyForce") then
-                local bv = Instance.new("BodyVelocity")
-                bv.Name = "FlyForce"
-                bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-                bv.Velocity = Vector3.new()
-                bv.Parent = hrp
-            end
-            local bv = hrp:FindFirstChild("FlyForce")
             local move = Vector3.new()
-            local speed = 50
-
+            local speed = 70
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then move += cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then move -= cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.A) then move -= cam.CFrame.RightVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.D) then move += cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then move += cam.CFrame.UpVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then move -= cam.CFrame.UpVector end
 
             if move.Magnitude > 0 then
-                bv.Velocity = move.Unit * speed
+                hrp.Velocity = move.Unit * speed
             else
-                bv.Velocity = Vector3.new()
+                hrp.Velocity = Vector3.new()
             end
-        else
-            local bv = hrp:FindFirstChild("FlyForce")
-            if bv then bv:Destroy() end
-        end
-
-        -- Fly V1 (Flappy Bird)
-        if activeFeatures.flyV1 then
+        elseif activeFeatures.flyV1 then
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
                 hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
             end
