@@ -2,6 +2,11 @@
 -- loadstring(game:HttpGet("https://raw.githubusercontent.com/duy94445-glitch/MyRobloxScript/refs/heads/main/script.lua"))()
 
 local player = game.Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local cam = workspace.CurrentCamera
+
+-- GUI
 local gui = Instance.new("ScreenGui")
 gui.Name = "UtilityGUI"
 gui.Parent = game.CoreGui
@@ -19,10 +24,10 @@ statusLabel.Size = UDim2.new(0, 280, 0, 30)
 statusLabel.Position = UDim2.new(0, 10, 0, 770)
 statusLabel.BackgroundTransparency = 1
 statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-statusLabel.Text = "MiniHack Loaded & Clean"
+statusLabel.Text = "MiniHack Loaded & Improved"
 statusLabel.Parent = frame
 
--- Helpers
+-- Toggle/Input creator
 local function createToggle(name, posY, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 280, 0, 30)
@@ -59,92 +64,88 @@ local function createInput(name, posY, default, callback)
     box.FocusLost:Connect(function(enter)
         if enter then
             local val = tonumber(box.Text)
-            if val then
-                callback(val)
-            end
+            if val then callback(val) end
         end
     end)
 end
 
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local cam = workspace.CurrentCamera
-local activeFeatures = {speed = 16, jump = 50}
+-- Features
+local activeFeatures = {speed = 16, jump = 50, flySpeed = 50}
+local maxSkyJumps, skyJumpCount = 3, 0
 
--- GUI Options
+-- GUI Ẩn/Hiện
 createToggle("Ẩn/Hiện GUI", 10, function(state)
     frame.Visible = not state
 end)
 
-createInput("Speed", 50, 16, function(val)
-    activeFeatures.speed = val
-end)
+-- Speed/Jump
+createInput("Speed", 50, 16, function(val) activeFeatures.speed = val end)
+createInput("JumpPower", 90, 50, function(val) activeFeatures.jump = val end)
 
-createInput("JumpPower", 90, 50, function(val)
-    activeFeatures.jump = val
-end)
-
-createToggle("Fly V1 (Flappy Bird)", 130, function(state)
-    activeFeatures.flyV1 = state
-end)
-
-createToggle("Fly V2 (Free-fly theo camera)", 170, function(state)
+-- Fly V2 (theo camera)
+createToggle("Fly V2 (Free-fly)", 130, function(state)
     activeFeatures.flyV2 = state
-end)
-
-createToggle("God Mode V1", 210, function(state)
-    activeFeatures.godMode1 = state
-end)
-
-createToggle("God Mode V2 (Ghost)", 250, function(state)
-    activeFeatures.godMode2 = state
-end)
-
-createToggle("Noclip", 290, function(state)
-    activeFeatures.noclip = state
-end)
-
-createInput("Zoom Min", 330, 5, function(val)
-    player.CameraMinZoomDistance = val
-end)
-
-createInput("Zoom Max", 370, 50, function(val)
-    player.CameraMaxZoomDistance = val
-end)
-
-createToggle("Unlock Camera Mode", 410, function(state)
-    if state then
-        player.CameraMode = Enum.CameraMode.Classic
-    else
-        player.CameraMode = Enum.CameraMode.LockFirstPerson
+    if not state then
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local hrp = char.HumanoidRootPart
+            if hrp:FindFirstChild("FlyControl") then
+                hrp.FlyControl:Destroy()
+            end
+        end
     end
 end)
 
-createToggle("Infinite Jump", 450, function(state)
-    activeFeatures.infiniteJump = state
+-- Fly Speed Input
+createInput("Fly Speed", 170, 50, function(val)
+    activeFeatures.flySpeed = val
 end)
 
-createToggle("Forced Jump", 490, function(state)
-    activeFeatures.forcedJump = state
-end)
-
-createToggle("Bỏ Lock Chuột", 530, function(state)
-    if state then
-        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-    else
-        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-    end
-end)
-
--- Sky Jump (Blox Fruits style)
-local maxSkyJumps = 3
-local skyJumpCount = 0
-createToggle("Sky Jump (Blox Fruits)", 570, function(state)
+-- Sky Jump
+createToggle("Sky Jump (Blox Fruits)", 210, function(state)
     activeFeatures.skyJump = state
     skyJumpCount = 0
 end)
 
--- Reset Sky Jump khi chạm đất
+-- Noclip
+createToggle("Noclip", 250, function(state)
+    activeFeatures.noclip = state
+end)
+
+-- Forced Jump
+createToggle("Forced Jump", 290, function(state)
+    activeFeatures.forcedJump = state
+end)
+
+-- Full Bright
+createToggle("Full Bright", 330, function(state)
+    if state then
+        game.Lighting.Brightness = 2
+        game.Lighting.ClockTime = 14
+        game.Lighting.FogEnd = 1e5
+        game.Lighting.GlobalShadows = false
+        game.Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+    else
+        game.Lighting.GlobalShadows = true
+    end
+end)
+
+-- Phím RightShift để bật/tắt GUI
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if not gpe and input.KeyCode == Enum.KeyCode.RightShift then
+        frame.Visible = not frame.Visible
+    end
+end)
+
+-- Phím Ctrl+Alt bỏ lock chuột
+UserInputService.InputBegan:Connect(function(input, gpe)
+    if not gpe and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) 
+        and UserInputService:IsKeyDown(Enum.KeyCode.LeftAlt) then
+        UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+    end
+end)
+
+-- Sky Jump reset khi chạm đất
 player.CharacterAdded:Connect(function(char)
     local hum = char:WaitForChild("Humanoid")
     hum.StateChanged:Connect(function(_, newState)
@@ -154,7 +155,7 @@ player.CharacterAdded:Connect(function(char)
     end)
 end)
 
--- Xử lý nhảy trên không
+-- JumpRequest xử lý Sky Jump
 UserInputService.JumpRequest:Connect(function()
     if activeFeatures.skyJump then
         local char = player.Character
@@ -179,41 +180,28 @@ RunService.RenderStepped:Connect(function()
 
         if not (char and hrp and hum) then return end
 
-        -- Speed + JumpPower
+        -- Speed & Jump
         hum.WalkSpeed = activeFeatures.speed
         hum.JumpPower = activeFeatures.jump
 
-        -- God Modes
-        if activeFeatures.godMode1 or activeFeatures.godMode2 then
-            if hum.Health < hum.MaxHealth then
-                hum.Health = hum.MaxHealth
-            end
+        -- Forced Jump
+        if activeFeatures.forcedJump and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
         end
 
-        -- Noclip/Ghost
-        local isClipping = activeFeatures.noclip or activeFeatures.godMode2
-        if isClipping then
-            for _, part in ipairs(char:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                end
-            end
-        else
-            if hrp then hrp.CanCollide = true end
-            local head = char:FindFirstChild("Head")
-            if head then head.CanCollide = true end
-        end
-
-        for _, part in ipairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.Transparency = activeFeatures.godMode2 and 0.5 or 0
-            end
-        end
-
-        -- Fly
+        -- Fly V2
         if activeFeatures.flyV2 then
-            local move = Vector3.new()
-            local speed = 50
+            local bv = hrp:FindFirstChild("FlyControl")
+            if not bv then
+                bv = Instance.new("BodyVelocity")
+                bv.Name = "FlyControl"
+                bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+                bv.Velocity = Vector3.zero
+                bv.Parent = hrp
+            end
+
+            local move = Vector3.zero
+            local speed = activeFeatures.flySpeed
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then move += cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then move -= cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.A) then move -= cam.CFrame.RightVector end
@@ -222,24 +210,19 @@ RunService.RenderStepped:Connect(function()
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then move -= cam.CFrame.UpVector end
 
             if move.Magnitude > 0 then
-                hrp.Velocity = move.Unit * speed
+                bv.Velocity = move.Unit * speed
             else
-                hrp.Velocity = Vector3.new()
-            end
-        elseif activeFeatures.flyV1 then
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
+                bv.Velocity = Vector3.zero
             end
         end
 
-        -- Infinite Jump
-        if activeFeatures.infiniteJump then
-            hum.Jump = true
-        end
-
-        -- Forced Jump
-        if activeFeatures.forcedJump and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+        -- Noclip
+        if activeFeatures.noclip then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
         end
     end)
 end)
