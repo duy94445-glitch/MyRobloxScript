@@ -1,6 +1,16 @@
---== FULL GUI + ESP + LOCAL PLAYER + CHAT ALERTS ==--
+--== FULL GUI MULTITAB ESP + LOCAL PLAYER + CHAT ALERT (FIXED) ==--
 
-local player = game.Players.LocalPlayer
+-- Services
+local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
+local UIS = game:GetService("UserInputService")
+local RS = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local player = Players.LocalPlayer
+local mouse = player:GetMouse()
+
+--== GUI ==--
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "Full_GUI"
 
@@ -73,7 +83,12 @@ local function createToggle(parent, name, posY, callback)
     end)
 end
 
+--== ESP System ==--
+local ESPConnections = {}
+local ESPHighlightedObjs = {}
+
 local function highlightObject(obj, color)
+    if ESPHighlightedObjs[obj] then return end
     local hl = Instance.new("Highlight")
     hl.Adornee = obj
     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -82,130 +97,83 @@ local function highlightObject(obj, color)
     hl.OutlineColor = Color3.fromRGB(255,255,255)
     hl.OutlineTransparency = 0
     hl.Parent = obj
+    ESPHighlightedObjs[obj] = hl
 end
 
-local function createESP(parent, name, posY, findFunc, color)
-    local running = false
-    createToggle(parent, name, posY, function(state)
-        running = state
-        if running then
-            task.spawn(function()
-                while running do
-                    for _, obj in ipairs(findFunc()) do
-                        if not obj:FindFirstChildOfClass("Highlight") then
-                            highlightObject(obj, color)
-                        end
-                    end
-                    task.wait(2)
-                end
-            end)
-        else
-            for _, obj in ipairs(findFunc()) do
-                local hl = obj:FindFirstChildOfClass("Highlight")
-                if hl then hl:Destroy() end
+local function enableESP(names, color, keyName)
+    local function check(obj)
+        for _, nm in ipairs(names) do
+            if obj.Name == nm or obj.Name:lower():find(nm:lower()) then
+                highlightObject(obj, color)
             end
+        end
+    end
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        check(obj)
+    end
+    local conn = workspace.DescendantAdded:Connect(function(obj)
+        check(obj)
+    end)
+    ESPConnections[keyName] = conn
+end
+
+local function disableESP(keyName)
+    if ESPConnections[keyName] then
+        ESPConnections[keyName]:Disconnect()
+        ESPConnections[keyName] = nil
+    end
+    for obj, hl in pairs(ESPHighlightedObjs) do
+        if hl and hl.Parent then
+            hl:Destroy()
+        end
+        ESPHighlightedObjs[obj] = nil
+    end
+end
+
+local function addESPToggle(tabName, entityNames, posY, color)
+    createToggle(tabFrames[tabName], "ESP "..table.concat(entityNames,", "), posY, function(state)
+        if state then
+            enableESP(entityNames, color, tabName.."_"..entityNames[1])
+        else
+            disableESP(tabName.."_"..entityNames[1])
         end
     end)
 end
 
-local function addESPEntities(tabName, entities, startY, color)
-    local posY = startY or 10
-    for _, entityName in ipairs(entities) do
-        createESP(tabFrames[tabName], "ESP "..entityName, posY, function()
-            local foundObjects = {}
-            for _, obj in ipairs(workspace:GetDescendants()) do
-                if obj.Name:lower():find(entityName:lower()) then
-                    table.insert(foundObjects, obj)
-                end
-            end
-            return foundObjects
-        end, color)
-        posY = posY + 40
-    end
-end
-
---== ESP ==--
-
+--== ESP Entities ==--
 -- Hotel
-addESPEntities("Hotel", {"Rush","Ambush","Figure","Seek","Snare","Window"}, 10, Color3.fromRGB(255,0,0))
-createESP(tabFrames["Hotel"], "ESP Pin", 250, function()
-    local t = {}
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name == "Pin" then table.insert(t, obj) end
-    end
-    return t
-end, Color3.fromRGB(0,255,255))
-createESP(tabFrames["Hotel"], "ESP Sách", 290, function()
-    local t = {}
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name == "Book" then table.insert(t, obj) end
-    end
-    return t
-end, Color3.fromRGB(0,200,255))
-createESP(tabFrames["Hotel"], "ESP Key", 330, function()
-    local t = {}
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name == "Key" then table.insert(t, obj) end
-    end
-    return t
-end, Color3.fromRGB(255,215,0))
+addESPToggle("Hotel", {"Rush","Ambush","Figure","Seek","Snare","Window"}, 10, Color3.fromRGB(255,0,0))
+addESPToggle("Hotel", {"Pin"}, 250, Color3.fromRGB(0,255,255))
+addESPToggle("Hotel", {"Book"}, 290, Color3.fromRGB(0,200,255))
+addESPToggle("Hotel", {"Key"}, 330, Color3.fromRGB(255,215,0))
 
 -- Mines
-addESPEntities("The Mine", {"Rush","Ambush","Figure","Seek","Giggle","Grumble","Gloombat"}, 10, Color3.fromRGB(255,0,0))
-createESP(tabFrames["The Mine"], "ESP Điện", 250, function()
-    local t = {}
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name == "Electric" then table.insert(t, obj) end
-    end
-    return t
-end, Color3.fromRGB(0,255,100))
-createESP(tabFrames["The Mine"], "ESP Máy", 290, function()
-    local t = {}
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name == "Machine" then table.insert(t, obj) end
-    end
-    return t
-end, Color3.fromRGB(0,100,255))
+addESPToggle("The Mine", {"Rush","Ambush","Figure","Seek","Giggle","Grumble","Gloombat"}, 10, Color3.fromRGB(255,0,0))
+addESPToggle("The Mine", {"Electric"}, 250, Color3.fromRGB(0,255,100))
+addESPToggle("The Mine", {"Machine"}, 290, Color3.fromRGB(0,100,255))
 
 -- Backdoors
-addESPEntities("The Backdoors", {"Bliz","Lookman","Lever Timer"}, 10, Color3.fromRGB(255,0,0))
-createESP(tabFrames["The Backdoors"], "ESP Key", 250, function()
-    local t = {}
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name == "Key" then table.insert(t, obj) end
-    end
-    return t
-end, Color3.fromRGB(255,215,0))
+addESPToggle("The Backdoors", {"Bliz","Lookman"}, 10, Color3.fromRGB(255,0,0))
+addESPToggle("The Backdoors", {"Lever"}, 90, Color3.fromRGB(200,200,0))
+addESPToggle("The Backdoors", {"Key"}, 250, Color3.fromRGB(255,215,0))
 
 -- Outdoors
-addESPEntities("The Outdoors", {"Suge","Mandrake","Groundskeeper","Eyestalk","Bramble","Monument"}, 10, Color3.fromRGB(255,0,0))
-createESP(tabFrames["The Outdoors"], "ESP Cần gạt", 290, function()
-    local t = {}
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name == "Lever" then table.insert(t, obj) end
-    end
-    return t
-end, Color3.fromRGB(200,200,0))
+addESPToggle("The Outdoors", {"Suge","Mandrake","Groundskeeper","Eyestalk","Bramble","Monument"}, 10, Color3.fromRGB(255,0,0))
+addESPToggle("The Outdoors", {"Lever"}, 290, Color3.fromRGB(200,200,0))
 
 -- Rooms
-addESPEntities("The Rooms", {"A-60","A-120"}, 10, Color3.fromRGB(255,0,0))
+addESPToggle("The Rooms", {"A-60","A-120"}, 10, Color3.fromRGB(255,0,0))
 
 -- Skip
-addESPEntities("Skip", {"Bypass Screech","Bypass A-90","Bypass Seek","Bypass Halt","Bypass Eyestalk"}, 10, Color3.fromRGB(255,0,0))
-createESP(tabFrames["Skip"], "ESP Cửa đúng", 250, function()
-    local t = {}
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name == "CorrectDoor" then table.insert(t, obj) end
-    end
-    return t
-end, Color3.fromRGB(255,0,255))
+addESPToggle("Skip", {"Bypass Screech","Bypass A-90","Bypass Seek","Bypass Halt","Bypass Eyestalk"}, 10, Color3.fromRGB(255,0,0))
+addESPToggle("Skip", {"CorrectDoor"}, 250, Color3.fromRGB(255,0,255))
 
 --== Local Player ==--
 local lpTab = tabFrames["Local Player"]
 
 -- Speed
 local speedBox = Instance.new("TextBox", lpTab)
-speedBox.Size = UDim2.new(0, 150, 0, 30)
+speedBox.Size = UDim2.new(0, 150, 0, 20)
 speedBox.Position = UDim2.new(0, 10, 0, 10)
 speedBox.PlaceholderText = "Speed Value"
 speedBox.Text = ""
@@ -224,17 +192,17 @@ end)
 -- God Mode
 local godConn
 createToggle(lpTab, "God Mode 300 HP", 60, function(state)
+    local hum = player.Character and player.Character:FindFirstChild("Humanoid")
+    if not hum then return end
     if state then
-        godConn = player.Character.Humanoid.HealthChanged:Connect(function(health)
-            if health < 200 then
-                player.Character.Humanoid.MaxHealth = 300
-                player.Character.Humanoid.Health = 300
-            end
+        hum.MaxHealth = 300
+        if hum.Health < 300 then hum.Health = 300 end
+        godConn = hum.HealthChanged:Connect(function(h)
+            if h < 300 then hum.Health = 300 end
         end)
     else
         if godConn then godConn:Disconnect() end
-        local hum = player.Character and player.Character:FindFirstChild("Humanoid")
-        if hum then hum.MaxHealth = 100 end
+        hum.MaxHealth = 100
     end
 end)
 
@@ -242,7 +210,7 @@ end)
 local jumpConnection
 createToggle(lpTab, "Infinite Jump", 100, function(state)
     if state then
-        jumpConnection = game:GetService("UserInputService").JumpRequest:Connect(function()
+        jumpConnection = UIS.JumpRequest:Connect(function()
             if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
                 player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
             end
@@ -268,51 +236,35 @@ createToggle(lpTab, "Unlock Mouse", 180, function(state)
 end)
 
 -- FullBright
-local defaultBrightness = game.Lighting.Brightness
-local defaultGlobalShadows = game.Lighting.GlobalShadows
-local defaultAmbient = game.Lighting.Ambient
+local defBrightness, defShadows, defAmbient = Lighting.Brightness, Lighting.GlobalShadows, Lighting.Ambient
 createToggle(lpTab, "FullBright", 220, function(state)
     if state then
-        game.Lighting.Brightness = 2
-        game.Lighting.GlobalShadows = false
-        game.Lighting.Ambient = Color3.new(1,1,1)
+        Lighting.Brightness = 2
+        Lighting.GlobalShadows = false
+        Lighting.Ambient = Color3.new(1,1,1)
     else
-        game.Lighting.Brightness = defaultBrightness
-        game.Lighting.GlobalShadows = defaultGlobalShadows
-        game.Lighting.Ambient = defaultAmbient
+        Lighting.Brightness = defBrightness
+        Lighting.GlobalShadows = defShadows
+        Lighting.Ambient = defAmbient
     end
 end)
 
 -- Noclip
-local noclipParts = {}
+local noclipRunning = false
 createToggle(lpTab, "Noclip", 260, function(state)
-    if state then
-        task.spawn(function()
-            while state do
-                local char = player.Character
-                if char then
-                    for _, part in ipairs(char:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                            noclipParts[part] = true
-                        end
-                    end
-                end
-                task.wait(0.1)
+    noclipRunning = state
+end)
+RS.Stepped:Connect(function()
+    if noclipRunning and player.Character then
+        for _, part in ipairs(player.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
             end
-        end)
-    else
-        for part, _ in pairs(noclipParts) do
-            if part and part.Parent then
-                part.CanCollide = true
-            end
-            noclipParts[part] = nil
         end
     end
 end)
 
 -- Teleport to Mouse
-local mouse = player:GetMouse()
 local teleportBtn = Instance.new("TextButton", lpTab)
 teleportBtn.Size = UDim2.new(0, 400, 0, 30)
 teleportBtn.Position = UDim2.new(0, 10, 0, 300)
@@ -321,13 +273,11 @@ teleportBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 teleportBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 teleportBtn.MouseButton1Click:Connect(function()
     if mouse.Target and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-        local targetPos = mouse.Hit.p
-        player.Character.HumanoidRootPart.CFrame = CFrame.new(targetPos) + Vector3.new(0, 5, 0)
+        player.Character.HumanoidRootPart.CFrame = CFrame.new(mouse.Hit.p) + Vector3.new(0, 5, 0)
     end
 end)
 
---== CHAT ALERTS ==--
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+--== Chat Alerts ==--
 local ChatRemote = ReplicatedStorage:WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("SayMessageRequest")
 
 local Alerts = {
@@ -340,17 +290,13 @@ local Alerts = {
     A120 = {"A-120"}
 }
 
-local function sendChat(msg)
-    pcall(function()
-        ChatRemote:FireServer(msg, "All")
-    end)
-end
-
 workspace.DescendantAdded:Connect(function(obj)
     for alertName, patterns in pairs(Alerts) do
-        for _, name in ipairs(patterns) do
-            if obj.Name == name or obj.Name:find(name) then
-                sendChat(alertName .. " is coming!")
+        for _, nm in ipairs(patterns) do
+            if obj.Name == nm or obj.Name:lower():find(nm:lower()) then
+                pcall(function()
+                    ChatRemote:FireServer(alertName.." is coming!", "All")
+                end)
             end
         end
     end
