@@ -19,9 +19,10 @@ statusLabel.Size = UDim2.new(0, 280, 0, 30)
 statusLabel.Position = UDim2.new(0, 10, 0, 770)
 statusLabel.BackgroundTransparency = 1
 statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-statusLabel.Text = "MiniHack Loaded & Improved"
+statusLabel.Text = "MiniHack Loaded & Clean"
 statusLabel.Parent = frame
 
+-- Helpers
 local function createToggle(name, posY, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 280, 0, 30)
@@ -87,7 +88,7 @@ createToggle("Fly V1 (Flappy Bird)", 130, function(state)
     activeFeatures.flyV1 = state
 end)
 
-createToggle("Fly V2 (Free-fly)", 170, function(state)
+createToggle("Fly V2 (Free-fly theo camera)", 170, function(state)
     activeFeatures.flyV2 = state
 end)
 
@@ -103,30 +104,15 @@ createToggle("Noclip", 290, function(state)
     activeFeatures.noclip = state
 end)
 
-createToggle("Anti AFK", 330, function(state)
-    if activeFeatures.afkConn then
-        activeFeatures.afkConn:Disconnect()
-        activeFeatures.afkConn = nil
-    end
-    if state then
-        local vu = game:GetService("VirtualUser")
-        activeFeatures.afkConn = player.Idled:Connect(function()
-            vu:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-            task.wait(1)
-            vu:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-        end)
-    end
-end)
-
-createInput("Zoom Min", 370, 5, function(val)
+createInput("Zoom Min", 330, 5, function(val)
     player.CameraMinZoomDistance = val
 end)
 
-createInput("Zoom Max", 410, 50, function(val)
+createInput("Zoom Max", 370, 50, function(val)
     player.CameraMaxZoomDistance = val
 end)
 
-createToggle("Unlock Camera Mode", 450, function(state)
+createToggle("Unlock Camera Mode", 410, function(state)
     if state then
         player.CameraMode = Enum.CameraMode.Classic
     else
@@ -134,15 +120,15 @@ createToggle("Unlock Camera Mode", 450, function(state)
     end
 end)
 
-createToggle("Infinite Jump", 490, function(state)
+createToggle("Infinite Jump", 450, function(state)
     activeFeatures.infiniteJump = state
 end)
 
-createToggle("Forced Jump", 530, function(state)
+createToggle("Forced Jump", 490, function(state)
     activeFeatures.forcedJump = state
 end)
 
-createToggle("Bỏ Lock Chuột", 570, function(state)
+createToggle("Bỏ Lock Chuột", 530, function(state)
     if state then
         UserInputService.MouseBehavior = Enum.MouseBehavior.Default
     else
@@ -153,7 +139,7 @@ end)
 -- Sky Jump (Blox Fruits style)
 local maxSkyJumps = 3
 local skyJumpCount = 0
-createToggle("Sky Jump (Blox Fruits)", 610, function(state)
+createToggle("Sky Jump (Blox Fruits)", 570, function(state)
     activeFeatures.skyJump = state
     skyJumpCount = 0
 end)
@@ -181,14 +167,6 @@ UserInputService.JumpRequest:Connect(function()
                 hrp.Velocity = Vector3.new(hrp.Velocity.X, activeFeatures.jump, hrp.Velocity.Z)
             end
         end
-    end
-end)
-
--- Toggle Fly V2 bằng phím F
-UserInputService.InputBegan:Connect(function(input, gpe)
-    if not gpe and input.KeyCode == Enum.KeyCode.F then
-        activeFeatures.flyV2 = not activeFeatures.flyV2
-        statusLabel.Text = "Fly V2 " .. (activeFeatures.flyV2 and "bật" or "tắt")
     end
 end)
 
@@ -232,10 +210,10 @@ RunService.RenderStepped:Connect(function()
             end
         end
 
-        -- Fly V2 bay theo hướng camera
+        -- Fly
         if activeFeatures.flyV2 then
             local move = Vector3.new()
-            local speed = 70
+            local speed = 50
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then move += cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then move -= cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.A) then move -= cam.CFrame.RightVector end
@@ -259,7 +237,7 @@ RunService.RenderStepped:Connect(function()
             hum.Jump = true
         end
 
-        -- Forced Jump (ép nhảy kể cả khi game chặn)
+        -- Forced Jump
         if activeFeatures.forcedJump and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
             hum:ChangeState(Enum.HumanoidStateType.Jumping)
         end
