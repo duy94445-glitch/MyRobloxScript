@@ -1,118 +1,79 @@
--- Loadstring mẫu:
--- loadstring(game:HttpGet("https://raw.githubusercontent.com/duy94445-glitch/MyRobloxScript/refs/heads/main/script.lua"))()
+--== FULL GUI + ESP + LOCAL PLAYER + CHAT ALERTS ==--
 
 local player = game.Players.LocalPlayer
-local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-
---== GUI ROOT ==--
 local gui = Instance.new("ScreenGui", game.CoreGui)
-gui.Name = "UtilityGUI"
+gui.Name = "Full_GUI"
 
+-- Main Frame
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 350, 0, 500)
-frame.Position = UDim2.new(0, 30, 0, 50)
+frame.Size = UDim2.new(0, 450, 0, 550)
+frame.Position = UDim2.new(0.5, -225, 0.5, -275)
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
 
-local statusLabel = Instance.new("TextLabel", frame)
-statusLabel.Size = UDim2.new(1, -20, 0, 25)
-statusLabel.Position = UDim2.new(0, 10, 1, -30)
-statusLabel.BackgroundTransparency = 1
-statusLabel.TextColor3 = Color3.fromRGB(255,255,255)
-statusLabel.Text = "MiniHack ESP Loaded"
+-- Toggle GUI
+local toggleBtn = Instance.new("TextButton", gui)
+toggleBtn.Size = UDim2.new(0, 120, 0, 30)
+toggleBtn.Position = UDim2.new(0, 10, 0, 10)
+toggleBtn.Text = "Toggle GUI"
+toggleBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.MouseButton1Click:Connect(function()
+    frame.Visible = not frame.Visible
+end)
 
---== UI HELPERS ==--
-local function createToggle(name, posY, callback)
+-- Tabs
+local tabs = {"Hotel","The Mine","The Backdoors","The Outdoors","The Rooms","Skip","Local Player"}
+local tabFrames = {}
+
+local function createTabButton(name, posX)
     local btn = Instance.new("TextButton", frame)
-    btn.Size = UDim2.new(0, 320, 0, 28)
-    btn.Position = UDim2.new(0, 15, 0, posY)
+    btn.Size = UDim2.new(0, 100, 0, 30)
+    btn.Position = UDim2.new(0, posX, 0, 0)
     btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    btn.TextColor3 = Color3.fromRGB(255,255,255)
-    btn.Text = name .. " [OFF]"
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Text = name
+    return btn
+end
+
+local function createTabFrame()
+    local tab = Instance.new("Frame", frame)
+    tab.Size = UDim2.new(1, -20, 1, -50)
+    tab.Position = UDim2.new(0, 10, 0, 40)
+    tab.BackgroundTransparency = 1
+    tab.Visible = false
+    return tab
+end
+
+for i, tabName in ipairs(tabs) do
+    local btn = createTabButton(tabName, (i-1) * 100)
+    local tabFrame = createTabFrame()
+    tabFrames[tabName] = tabFrame
+    btn.MouseButton1Click:Connect(function()
+        for _, f in pairs(tabFrames) do f.Visible = false end
+        tabFrame.Visible = true
+    end)
+    if i == 1 then tabFrame.Visible = true end
+end
+
+--== Helpers ==--
+local function createToggle(parent, name, posY, callback)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = UDim2.new(0, 400, 0, 30)
+    btn.Position = UDim2.new(0, 10, 0, posY)
+    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Text = name.." [OFF]"
     local state = false
     btn.MouseButton1Click:Connect(function()
         state = not state
         btn.Text = name .. (state and " [ON]" or " [OFF]")
-        callback(state)
-        statusLabel.Text = name .. (state and " bật" or " tắt")
+        if callback then callback(state) end
     end)
 end
-
-local function createInput(name, posY, default, callback)
-    local label = Instance.new("TextLabel", frame)
-    label.Size = UDim2.new(0, 120, 0, 28)
-    label.Position = UDim2.new(0, 15, 0, posY)
-    label.BackgroundTransparency = 1
-    label.TextColor3 = Color3.fromRGB(255,255,255)
-    label.Text = name
-
-    local box = Instance.new("TextBox", frame)
-    box.Size = UDim2.new(0, 180, 0, 28)
-    box.Position = UDim2.new(0, 150, 0, posY)
-    box.BackgroundColor3 = Color3.fromRGB(40,40,40)
-    box.TextColor3 = Color3.fromRGB(255,255,255)
-    box.Text = tostring(default)
-    box.FocusLost:Connect(function(enter)
-        if enter then
-            local val = tonumber(box.Text)
-            if val then callback(val) end
-        end
-    end)
-end
-
---== ESP WHITELIST ==--
-local EntityList = {
-    Hotel = {
-        Rush = {"Rush","RushMoving"},
-        Ambush = {"Ambush"},
-        Figure = {"Figure"},
-        Seek = {"Seek","Seek_Arm","Seek_Eye"},
-        Snare = {"Snare"},
-        Window = {"WindowEntity"},
-        Book = {"Book"},
-        Pin = {"Pin"},
-        Key = {"KeyObtain"}
-    },
-    Mines = {
-        Giggle = {"Giggle"},
-        Grumble = {"Grumble"},
-        Gloombat = {"Gloombat"},
-        Electric = {"ElectricalBox"},
-        Machine = {"Generator"}
-    },
-    Backdoors = {
-        Bliz = {"Bliz"},
-        Lookman = {"Lookman"},
-        Key = {"KeyObtain"},
-        Lever = {"LeverSwitch"}
-    },
-    Outdoors = {
-        Suge = {"Suge"},
-        Mandrake = {"Mandrake"},
-        Groundskeeper = {"Groundskeeper"},
-        Eyestalk = {"Eyestalk"},
-        Bramble = {"BramblePlant"},
-        Lever = {"BrambleLever"}
-    },
-    Rooms = {
-        A60 = {"A-60"},
-        A120 = {"A-120"},
-        A90 = {"A-90"}
-    },
-    Skip = {
-        Screech = {"Screech"},
-        Seek = {"Seek"},
-        Halt = {"Halt"},
-        Eyestalk = {"Eyestalk"},
-        CorrectDoor = {"Door_Correct"}
-    }
-}
 
 local function highlightObject(obj, color)
-    if not obj or obj:FindFirstChildOfClass("Highlight") then return end
     local hl = Instance.new("Highlight")
     hl.Adornee = obj
     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -123,70 +84,274 @@ local function highlightObject(obj, color)
     hl.Parent = obj
 end
 
-local function enableESP(list, color)
-    local function check(obj)
-        for _, names in pairs(list) do
-            for _, name in ipairs(names) do
-                if obj.Name == name or obj.Name:find(name) then
-                    highlightObject(obj, color)
+local function createESP(parent, name, posY, findFunc, color)
+    local running = false
+    createToggle(parent, name, posY, function(state)
+        running = state
+        if running then
+            task.spawn(function()
+                while running do
+                    for _, obj in ipairs(findFunc()) do
+                        if not obj:FindFirstChildOfClass("Highlight") then
+                            highlightObject(obj, color)
+                        end
+                    end
+                    task.wait(2)
                 end
+            end)
+        else
+            for _, obj in ipairs(findFunc()) do
+                local hl = obj:FindFirstChildOfClass("Highlight")
+                if hl then hl:Destroy() end
             end
         end
-    end
-    for _, obj in ipairs(workspace:GetDescendants()) do check(obj) end
-    workspace.DescendantAdded:Connect(check)
+    end)
 end
 
---== LOCAL PLAYER FEATURES ==--
-local active = {speed=16, jump=50, godMode=false, noclip=false, fullbright=false}
-local Lighting = game:GetService("Lighting")
-local oldLightingProps = {}
+local function addESPEntities(tabName, entities, startY, color)
+    local posY = startY or 10
+    for _, entityName in ipairs(entities) do
+        createESP(tabFrames[tabName], "ESP "..entityName, posY, function()
+            local foundObjects = {}
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj.Name:lower():find(entityName:lower()) then
+                    table.insert(foundObjects, obj)
+                end
+            end
+            return foundObjects
+        end, color)
+        posY = posY + 40
+    end
+end
 
-createInput("Speed", 30, 16, function(v) active.speed=v end)
-createInput("JumpPower", 70, 50, function(v) active.jump=v end)
+--== ESP ==--
 
-createToggle("God Mode", 110, function(state) active.godMode=state end)
-createToggle("Noclip", 150, function(state) active.noclip=state end)
-createToggle("FullBright", 190, function(state)
-    active.fullbright=state
-    if state then
-        oldLightingProps.Brightness = Lighting.Brightness
-        oldLightingProps.ClockTime = Lighting.ClockTime
-        oldLightingProps.FogEnd = Lighting.FogEnd
-        Lighting.Brightness = 2
-        Lighting.ClockTime = 12
-        Lighting.FogEnd = 100000
-    else
-        for k,v in pairs(oldLightingProps) do Lighting[k]=v end
+-- Hotel
+addESPEntities("Hotel", {"Rush","Ambush","Figure","Seek","Snare","Window"}, 10, Color3.fromRGB(255,0,0))
+createESP(tabFrames["Hotel"], "ESP Pin", 250, function()
+    local t = {}
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj.Name == "Pin" then table.insert(t, obj) end
+    end
+    return t
+end, Color3.fromRGB(0,255,255))
+createESP(tabFrames["Hotel"], "ESP Sách", 290, function()
+    local t = {}
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj.Name == "Book" then table.insert(t, obj) end
+    end
+    return t
+end, Color3.fromRGB(0,200,255))
+createESP(tabFrames["Hotel"], "ESP Key", 330, function()
+    local t = {}
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj.Name == "Key" then table.insert(t, obj) end
+    end
+    return t
+end, Color3.fromRGB(255,215,0))
+
+-- Mines
+addESPEntities("The Mine", {"Rush","Ambush","Figure","Seek","Giggle","Grumble","Gloombat"}, 10, Color3.fromRGB(255,0,0))
+createESP(tabFrames["The Mine"], "ESP Điện", 250, function()
+    local t = {}
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj.Name == "Electric" then table.insert(t, obj) end
+    end
+    return t
+end, Color3.fromRGB(0,255,100))
+createESP(tabFrames["The Mine"], "ESP Máy", 290, function()
+    local t = {}
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj.Name == "Machine" then table.insert(t, obj) end
+    end
+    return t
+end, Color3.fromRGB(0,100,255))
+
+-- Backdoors
+addESPEntities("The Backdoors", {"Bliz","Lookman","Lever Timer"}, 10, Color3.fromRGB(255,0,0))
+createESP(tabFrames["The Backdoors"], "ESP Key", 250, function()
+    local t = {}
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj.Name == "Key" then table.insert(t, obj) end
+    end
+    return t
+end, Color3.fromRGB(255,215,0))
+
+-- Outdoors
+addESPEntities("The Outdoors", {"Suge","Mandrake","Groundskeeper","Eyestalk","Bramble","Monument"}, 10, Color3.fromRGB(255,0,0))
+createESP(tabFrames["The Outdoors"], "ESP Cần gạt", 290, function()
+    local t = {}
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj.Name == "Lever" then table.insert(t, obj) end
+    end
+    return t
+end, Color3.fromRGB(200,200,0))
+
+-- Rooms
+addESPEntities("The Rooms", {"A-60","A-120"}, 10, Color3.fromRGB(255,0,0))
+
+-- Skip
+addESPEntities("Skip", {"Bypass Screech","Bypass A-90","Bypass Seek","Bypass Halt","Bypass Eyestalk"}, 10, Color3.fromRGB(255,0,0))
+createESP(tabFrames["Skip"], "ESP Cửa đúng", 250, function()
+    local t = {}
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj.Name == "CorrectDoor" then table.insert(t, obj) end
+    end
+    return t
+end, Color3.fromRGB(255,0,255))
+
+--== Local Player ==--
+local lpTab = tabFrames["Local Player"]
+
+-- Speed
+local speedBox = Instance.new("TextBox", lpTab)
+speedBox.Size = UDim2.new(0, 150, 0, 30)
+speedBox.Position = UDim2.new(0, 10, 0, 10)
+speedBox.PlaceholderText = "Speed Value"
+speedBox.Text = ""
+
+local setSpeed = Instance.new("TextButton", lpTab)
+setSpeed.Size = UDim2.new(0, 100, 0, 30)
+setSpeed.Position = UDim2.new(0, 170, 0, 10)
+setSpeed.Text = "Set Speed"
+setSpeed.MouseButton1Click:Connect(function()
+    local val = tonumber(speedBox.Text)
+    if val and player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = val
     end
 end)
-createToggle("Unlock Mouse", 230, function(state)
-    UserInputService.MouseBehavior = state and Enum.MouseBehavior.Default or Enum.MouseBehavior.LockCenter
+
+-- God Mode
+local godConn
+createToggle(lpTab, "God Mode 300 HP", 60, function(state)
+    if state then
+        godConn = player.Character.Humanoid.HealthChanged:Connect(function(health)
+            if health < 200 then
+                player.Character.Humanoid.MaxHealth = 300
+                player.Character.Humanoid.Health = 300
+            end
+        end)
+    else
+        if godConn then godConn:Disconnect() end
+        local hum = player.Character and player.Character:FindFirstChild("Humanoid")
+        if hum then hum.MaxHealth = 100 end
+    end
 end)
-createToggle("Ẩn/Hiện GUI", 270, function(state) frame.Visible=not state end)
 
---== ESP TOGGLES ==--
-createToggle("ESP Hotel", 310, function(state) if state then enableESP(EntityList.Hotel, Color3.fromRGB(255,0,0)) end end)
-createToggle("ESP Mines", 350, function(state) if state then enableESP(EntityList.Mines, Color3.fromRGB(255,0,0)) end end)
-createToggle("ESP Backdoors", 390, function(state) if state then enableESP(EntityList.Backdoors, Color3.fromRGB(255,0,0)) end end)
-createToggle("ESP Outdoors", 430, function(state) if state then enableESP(EntityList.Outdoors, Color3.fromRGB(255,0,0)) end end)
-createToggle("ESP Rooms", 470, function(state) if state then enableESP(EntityList.Rooms, Color3.fromRGB(255,0,0)) end end)
+-- Infinite Jump
+local jumpConnection
+createToggle(lpTab, "Infinite Jump", 100, function(state)
+    if state then
+        jumpConnection = game:GetService("UserInputService").JumpRequest:Connect(function()
+            if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+                player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+            end
+        end)
+    elseif jumpConnection then
+        jumpConnection:Disconnect()
+        jumpConnection = nil
+    end
+end)
 
---== MAIN LOOP ==--
-RunService.Stepped:Connect(function()
-    local char = player.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    local hrp = char and char:FindFirstChild("HumanoidRootPart")
-    if hum then
-        hum.WalkSpeed = active.speed
-        hum.JumpPower = active.jump
-        if active.godMode and hum.Health < hum.MaxHealth then
-            hum.Health = hum.MaxHealth
+-- Camera Zoom
+createToggle(lpTab, "Unlock Camera Zoom", 140, function(state)
+    if state then
+        player.CameraMaxZoomDistance = 1000
+    else
+        player.CameraMaxZoomDistance = 128
+    end
+end)
+
+-- Unlock Mouse
+createToggle(lpTab, "Unlock Mouse", 180, function(state)
+    player.DevEnableMouseLock = state
+end)
+
+-- FullBright
+local defaultBrightness = game.Lighting.Brightness
+local defaultGlobalShadows = game.Lighting.GlobalShadows
+local defaultAmbient = game.Lighting.Ambient
+createToggle(lpTab, "FullBright", 220, function(state)
+    if state then
+        game.Lighting.Brightness = 2
+        game.Lighting.GlobalShadows = false
+        game.Lighting.Ambient = Color3.new(1,1,1)
+    else
+        game.Lighting.Brightness = defaultBrightness
+        game.Lighting.GlobalShadows = defaultGlobalShadows
+        game.Lighting.Ambient = defaultAmbient
+    end
+end)
+
+-- Noclip
+local noclipParts = {}
+createToggle(lpTab, "Noclip", 260, function(state)
+    if state then
+        task.spawn(function()
+            while state do
+                local char = player.Character
+                if char then
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                            noclipParts[part] = true
+                        end
+                    end
+                end
+                task.wait(0.1)
+            end
+        end)
+    else
+        for part, _ in pairs(noclipParts) do
+            if part and part.Parent then
+                part.CanCollide = true
+            end
+            noclipParts[part] = nil
         end
     end
-    if active.noclip and char then
-        for _,p in ipairs(char:GetDescendants()) do
-            if p:IsA("BasePart") then p.CanCollide=false end
+end)
+
+-- Teleport to Mouse
+local mouse = player:GetMouse()
+local teleportBtn = Instance.new("TextButton", lpTab)
+teleportBtn.Size = UDim2.new(0, 400, 0, 30)
+teleportBtn.Position = UDim2.new(0, 10, 0, 300)
+teleportBtn.Text = "Teleport to Mouse"
+teleportBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+teleportBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+teleportBtn.MouseButton1Click:Connect(function()
+    if mouse.Target and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        local targetPos = mouse.Hit.p
+        player.Character.HumanoidRootPart.CFrame = CFrame.new(targetPos) + Vector3.new(0, 5, 0)
+    end
+end)
+
+--== CHAT ALERTS ==--
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ChatRemote = ReplicatedStorage:WaitForChild("DefaultChatSystemChatEvents"):WaitForChild("SayMessageRequest")
+
+local Alerts = {
+    Rush = {"Rush","RushMoving"},
+    Ambush = {"Ambush"},
+    Bliz = {"Bliz"},
+    Suge = {"Suge"},
+    Monument = {"Monument"},
+    A60 = {"A-60"},
+    A120 = {"A-120"}
+}
+
+local function sendChat(msg)
+    pcall(function()
+        ChatRemote:FireServer(msg, "All")
+    end)
+end
+
+workspace.DescendantAdded:Connect(function(obj)
+    for alertName, patterns in pairs(Alerts) do
+        for _, name in ipairs(patterns) do
+            if obj.Name == name or obj.Name:find(name) then
+                sendChat(alertName .. " is coming!")
+            end
         end
     end
 end)
