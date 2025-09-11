@@ -18,6 +18,23 @@ frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
 frame.Parent = gui
 
+-- Nút Toggle Menu
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0, 100, 0, 30)
+toggleBtn.Position = UDim2.new(0, 10, 0, 10)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.Text = "Ẩn Menu"
+toggleBtn.Parent = gui
+
+-- Trạng thái ẩn/hiện menu
+local menuVisible = true
+toggleBtn.MouseButton1Click:Connect(function()
+    menuVisible = not menuVisible
+    frame.Visible = menuVisible
+    toggleBtn.Text = menuVisible and "Ẩn Menu" or "Hiện Menu"
+end)
+
 -- Status label
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(0, 280, 0, 30)
@@ -27,7 +44,7 @@ statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 statusLabel.Text = "MiniHack Loaded & Improved"
 statusLabel.Parent = frame
 
--- Toggle/Input creator
+-- Hàm tạo toggle
 local function createToggle(name, posY, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 280, 0, 30)
@@ -45,6 +62,7 @@ local function createToggle(name, posY, callback)
     end)
 end
 
+-- Hàm tạo input
 local function createInput(name, posY, default, callback)
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(0, 130, 0, 30)
@@ -73,16 +91,11 @@ end
 local activeFeatures = {speed = 16, jump = 50, flySpeed = 50}
 local maxSkyJumps, skyJumpCount = 3, 0
 
--- GUI Ẩn/Hiện
-createToggle("Ẩn/Hiện GUI", 10, function(state)
-    frame.Visible = not state
-end)
-
 -- Speed/Jump
 createInput("Speed", 50, 16, function(val) activeFeatures.speed = val end)
 createInput("JumpPower", 90, 50, function(val) activeFeatures.jump = val end)
 
--- Fly V2 (theo camera)
+-- Fly V2
 createToggle("Fly V2 (Free-fly)", 130, function(state)
     activeFeatures.flyV2 = state
     if not state then
@@ -130,13 +143,6 @@ createToggle("Full Bright", 330, function(state)
     end
 end)
 
--- Phím RightShift để bật/tắt GUI
-UserInputService.InputBegan:Connect(function(input, gpe)
-    if not gpe and input.KeyCode == Enum.KeyCode.RightShift then
-        frame.Visible = not frame.Visible
-    end
-end)
-
 -- Phím Ctrl+Alt bỏ lock chuột
 UserInputService.InputBegan:Connect(function(input, gpe)
     if not gpe and UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) 
@@ -180,16 +186,13 @@ RunService.RenderStepped:Connect(function()
 
         if not (char and hrp and hum) then return end
 
-        -- Speed & Jump
         hum.WalkSpeed = activeFeatures.speed
         hum.JumpPower = activeFeatures.jump
 
-        -- Forced Jump
         if activeFeatures.forcedJump and UserInputService:IsKeyDown(Enum.KeyCode.Space) then
             hum:ChangeState(Enum.HumanoidStateType.Jumping)
         end
 
-        -- Fly V2
         if activeFeatures.flyV2 then
             local bv = hrp:FindFirstChild("FlyControl")
             if not bv then
@@ -209,14 +212,9 @@ RunService.RenderStepped:Connect(function()
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then move += cam.CFrame.UpVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then move -= cam.CFrame.UpVector end
 
-            if move.Magnitude > 0 then
-                bv.Velocity = move.Unit * speed
-            else
-                bv.Velocity = Vector3.zero
-            end
+            bv.Velocity = move.Magnitude > 0 and move.Unit * speed or Vector3.zero
         end
 
-        -- Noclip
         if activeFeatures.noclip then
             for _, part in ipairs(char:GetDescendants()) do
                 if part:IsA("BasePart") then
