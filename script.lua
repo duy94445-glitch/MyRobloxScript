@@ -102,7 +102,7 @@ createToggle("Fly V1 (Flappy Bird)", 130, function(state)
     activeFeatures.flyV1 = state
 end)
 
-createToggle("Fly V2 (Free-fly)", 170, function(state)
+createToggle("Fly V2 (Airplane)", 170, function(state)
     activeFeatures.flyV2 = state
 end)
 
@@ -239,23 +239,36 @@ RunService.RenderStepped:Connect(function()
             end
         end
 
-        -- Fly
+        -- Fly V2 (Airplane)
         if activeFeatures.flyV2 then
+            if not hrp:FindFirstChild("FlyForce") then
+                local bv = Instance.new("BodyVelocity")
+                bv.Name = "FlyForce"
+                bv.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+                bv.Velocity = Vector3.new()
+                bv.Parent = hrp
+            end
+            local bv = hrp:FindFirstChild("FlyForce")
             local move = Vector3.new()
             local speed = 50
+
             if UserInputService:IsKeyDown(Enum.KeyCode.W) then move += cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.S) then move -= cam.CFrame.LookVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.A) then move -= cam.CFrame.RightVector end
             if UserInputService:IsKeyDown(Enum.KeyCode.D) then move += cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then move += Vector3.new(0, 1, 0) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then move -= Vector3.new(0, 1, 0) end
 
             if move.Magnitude > 0 then
-                hrp.Velocity = move.Unit * speed
+                bv.Velocity = move.Unit * speed
             else
-                hrp.Velocity = Vector3.new()
+                bv.Velocity = Vector3.new()
             end
-        elseif activeFeatures.flyV1 then
+        else
+            local bv = hrp:FindFirstChild("FlyForce")
+            if bv then bv:Destroy() end
+        end
+
+        -- Fly V1 (Flappy Bird)
+        if activeFeatures.flyV1 then
             if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
                 hrp.Velocity = Vector3.new(hrp.Velocity.X, 50, hrp.Velocity.Z)
             end
