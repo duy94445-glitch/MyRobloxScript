@@ -1,153 +1,135 @@
--- scriptdoors.lua
--- Full ESP + Skip + Local Player + Notify + Toggle Mouse
+-- ✅ Doors Script với GUI + Ctrl+Alt unlock mouse
 
-local Players = game:GetService("Players")
+local plr = game.Players.LocalPlayer
 local UIS = game:GetService("UserInputService")
 local RS = game:GetService("RunService")
-local LP = Players.LocalPlayer
 
--- Tạo ScreenGui
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = LP:WaitForChild("PlayerGui")
+-- Tạo GUI
+local gui = Instance.new("ScreenGui", plr:WaitForChild("PlayerGui"))
+gui.ResetOnSpawn = false
 
--- Tạo frame chính
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 500, 0, 300)
-Frame.Position = UDim2.new(0.25, 0, 0.25, 0)
-Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-Frame.Active = true
-Frame.Draggable = true
-Frame.Visible = true
-Frame.Parent = ScreenGui
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 220, 0, 160)
+frame.Position = UDim2.new(0.7, 0, 0.3, 0)
+frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
+frame.Active = true
 
--- Tab system
-local Tabs = {}
-local CurrentTab = nil
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1, -30, 0, 30)
+title.Text = "Doors Menu"
+title.TextColor3 = Color3.new(1,1,1)
+title.BackgroundTransparency = 1
+title.TextXAlignment = Enum.TextXAlignment.Left
 
-local function CreateTab(name)
-    local Button = Instance.new("TextButton")
-    Button.Text = name
-    Button.Size = UDim2.new(0, 100, 0, 30)
-    Button.Parent = Frame
-    Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+local closeBtn = Instance.new("TextButton", frame)
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -30, 0, 0)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.new(1,0,0)
 
-    local TabFrame = Instance.new("Frame")
-    TabFrame.Size = UDim2.new(1, -110, 1, -40)
-    TabFrame.Position = UDim2.new(0, 110, 0, 40)
-    TabFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    TabFrame.Visible = false
-    TabFrame.Parent = Frame
+-- Biến
+local hum = plr.Character:WaitForChild("Humanoid")
+local char = plr.Character
+local speed = 16
+local noclip = false
 
-    Button.MouseButton1Click:Connect(function()
-        if CurrentTab then CurrentTab.Visible = false end
-        TabFrame.Visible = true
-        CurrentTab = TabFrame
-    end)
+-- ESP Button
+local espBtn = Instance.new("TextButton", frame)
+espBtn.Size = UDim2.new(1, -20, 0, 30)
+espBtn.Position = UDim2.new(0, 10, 0, 40)
+espBtn.Text = "ESP: OFF"
 
-    Tabs[name] = TabFrame
-    return TabFrame
-end
-
--- ESP Tab
-local ESPFrame = CreateTab("ESP")
--- (placeholder label)
-local ESPLabel = Instance.new("TextLabel")
-ESPLabel.Text = "ESP Options (Hotel, Mines, Backdoors, Outdoors, Rooms)"
-ESPLabel.Size = UDim2.new(1, 0, 0, 30)
-ESPLabel.TextColor3 = Color3.new(1,1,1)
-ESPLabel.Parent = ESPFrame
-
--- Skip Tab
-local SkipFrame = CreateTab("Skip")
-local SkipLabel = Instance.new("TextLabel")
-SkipLabel.Text = "Skip Options (Screech, A-90, Seek, Halt, Eyestalk)"
-SkipLabel.Size = UDim2.new(1, 0, 0, 30)
-SkipLabel.TextColor3 = Color3.new(1,1,1)
-SkipLabel.Parent = SkipFrame
-
--- Local Player Tab
-local LocalFrame = CreateTab("LocalPlayer")
-
--- Speed Slider (simple input)
-local SpeedBox = Instance.new("TextBox")
-SpeedBox.PlaceholderText = "Enter WalkSpeed"
-SpeedBox.Size = UDim2.new(0, 200, 0, 30)
-SpeedBox.Position = UDim2.new(0, 10, 0, 10)
-SpeedBox.Text = ""
-SpeedBox.Parent = LocalFrame
-
-SpeedBox.FocusLost:Connect(function()
-    local val = tonumber(SpeedBox.Text)
-    if val then
-        LP.Character.Humanoid.WalkSpeed = val
-    end
+local espOn = false
+espBtn.MouseButton1Click:Connect(function()
+    espOn = not espOn
+    espBtn.Text = "ESP: " .. (espOn and "ON" or "OFF")
+    -- TODO: bạn thêm code ESP của bạn ở đây
 end)
 
--- GodMode loop
-RS.Heartbeat:Connect(function()
-    local char = LP.Character
-    if char and char:FindFirstChild("Humanoid") then
-        if char.Humanoid.Health <= 200 then
-            char.Humanoid.Health = 300
-        end
-        char.Humanoid.MaxHealth = 300
+-- Speed Button
+local spdBtn = Instance.new("TextButton", frame)
+spdBtn.Size = UDim2.new(1, -20, 0, 30)
+spdBtn.Position = UDim2.new(0, 10, 0, 75)
+spdBtn.Text = "Speed: "..speed
+
+spdBtn.MouseButton1Click:Connect(function()
+    if speed == 16 then
+        speed = 40
+    else
+        speed = 16
     end
+    spdBtn.Text = "Speed: "..speed
 end)
 
--- Infinite Jump
-UIS.JumpRequest:Connect(function()
-    if LP.Character and LP.Character:FindFirstChildOfClass("Humanoid") then
-        LP.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
-    end
+-- Noclip Button
+local noclipBtn = Instance.new("TextButton", frame)
+noclipBtn.Size = UDim2.new(1, -20, 0, 30)
+noclipBtn.Position = UDim2.new(0, 10, 0, 110)
+noclipBtn.Text = "Noclip: OFF"
+
+noclipBtn.MouseButton1Click:Connect(function()
+    noclip = not noclip
+    noclipBtn.Text = "Noclip: " .. (noclip and "ON" or "OFF")
 end)
 
--- Full Bright
-game:GetService("Lighting").Brightness = 2
-game:GetService("Lighting").ClockTime = 12
-game:GetService("Lighting").FogEnd = 100000
+-- Đóng menu
+closeBtn.MouseButton1Click:Connect(function()
+    frame.Visible = false
+end)
 
--- No Clip
-local noclip = true
+-- Loop Speed + Noclip
 RS.Stepped:Connect(function()
-    if noclip and LP.Character then
-        for _,v in pairs(LP.Character:GetDescendants()) do
-            if v:IsA("BasePart") and v.CanCollide then
-                v.CanCollide = false
+    if hum and hum.Parent then
+        hum.WalkSpeed = speed
+    end
+    if noclip and char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
             end
         end
     end
 end)
 
--- Toggle Mouse Lock bằng phím 0
-UIS.InputBegan:Connect(function(input, gpe)
-    if gpe then return end
-    if input.KeyCode == Enum.KeyCode.Zero then
-        if UIS.MouseBehavior == Enum.MouseBehavior.LockCenter then
-            UIS.MouseBehavior = Enum.MouseBehavior.Default
-        else
-            UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
-        end
+-- Script kéo thả menu
+local dragging, dragInput, dragStart, startPos
+title.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
     end
 end)
 
--- Notify quái trong chat
-local function Notify(msg)
-    game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
-        Text = "[ALERT] " .. msg,
-        Color = Color3.fromRGB(255,0,0),
-        Font = Enum.Font.SourceSansBold,
-        TextSize = 18
-    })
-end
+title.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
 
--- Giả lập notify (bạn thay trigger sau)
-local Monsters = {"Rush","Ambush","Blitz","Suge","A-60","A-120"}
-for _,m in ipairs(Monsters) do
-    task.delay(10*_ , function()
-        Notify(m .. " is coming!")
-    end)
-end
+UIS.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale, startPos.X.Offset + delta.X,
+            startPos.Y.Scale, startPos.Y.Offset + delta.Y
+        )
+    end
+end)
 
--- Default tab
-Tabs["ESP"].Visible = true
-CurrentTab = Tabs["ESP"]
+-- ✅ Ctrl + Alt unlock mouse
+UIS.InputBegan:Connect(function(input, processed)
+    if UIS:IsKeyDown(Enum.KeyCode.LeftControl) and UIS:IsKeyDown(Enum.KeyCode.LeftAlt) then
+        local UIS2 = game:GetService("UserInputService")
+        if UIS2.MouseBehavior == Enum.MouseBehavior.LockCenter then
+            UIS2.MouseBehavior = Enum.MouseBehavior.Default
+        else
+            UIS2.MouseBehavior = Enum.MouseBehavior.LockCenter
+        end
+    end
+end)
